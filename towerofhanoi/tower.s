@@ -1,6 +1,5 @@
 .section .data
 n: .word 3
-msg: .string "Move disk from %d%c%c\n"
 
 .section .text
 .globl _start
@@ -18,46 +17,82 @@ _start:
 
 
 tow:
-    addi sp, sp, -32
-    sw ra, 24(sp)
-    sw a0, 16(sp)
-    sw a1, 12(sp)
+    addi sp, sp, -40
+    sw ra, 32(sp)
+    sw a0, 24(sp)
+    sw a1, 16(sp)
     sw a2, 8(sp)
-    sw a3, 4(sp)
+    sw a3, 0(sp)
 
     beqz a0, tow_ret
-    
 
-    #tow(n-1, from, aux, to)
+    #first function call
+    lw a0, 24(sp)
     addi a0, a0, -1
-    mv t1, a1 # A in t1
-    mv t2, a2 # C in t2
-    mv t3, a3 # B in t3
-
-    mv a1, t1 # A in a1
-    mv a2, t3 # B in a2
-    mv a3, t2 # C in a3
+    lw a1, 16(sp)    #A -> from
+    lw a2, 8(sp)     #C -> to
+    lw a3, 0(sp)     #B -> spare
     jal ra, tow
+    jal ra, movedisk
 
-    lw a1, 12(sp)
-    lw a2, 8(sp)
-    lw a0, 16(sp)
-    la a0, msg #load msg address
-    li a7, 64
+    #print disk's number
+    li a7, 64 #write 
+    li a0, 1
+    lw t0, 24(sp) #address of a0
+    addi t0, t0, '0'
+    sw t1, 24(sp)
+    mv a1, sp
+    li a2, 1
     ecall
 
-    #tow(n-1, aux, to, from)
-    lw a0, 16(sp)
-    addi a0, a0, -1
-    mv a1, t3
-    mv a2, t2
-    mv a3, t1
-    jal ra, tow
+    #correcting a0
+    lw t1, 24(sp)
+    addi t1, t1, -'0'
+    sw t1, 24(sp)
 
-tow_ret:
-    lw ra, 24(sp)
-    addi sp, sp, 32
+
+    #print 'from rod'
+    li a7, 64
+    li a0, 1
+    mv a1, sp
+    addi a1, a1, 16
+    li a2, 1
+    ecall
+
+    #print 'to rod'
+    li a7, 64
+    li a0, 1
+    mv a1, sp
+    addi a1, a1, 8
+    li a2, 1
+    ecall
+
+
+    #next function call setup
+    lw a0, 24(sp)
+    lw a1, 8(sp)
+    lw a2, 0(sp)
+    lw a3, 16(sp)
+
+    jal ra, tow 
+    
+    
+    j tow_ret
+
+
+movedisk:
+    li a7, 64
+    li a0, 1
+    la a1, strmd
+    li a2, 10
+    ecall
     ret
 
+tow_ret:
+    lw ra, 32(sp)
+    addi sp, sp, 40
+    ret
 
+.section .data
+strmd: .ascii "Move disk "
 
