@@ -1,4 +1,4 @@
-.section .data
+section .data
 n: .word 3
 
 .section .text
